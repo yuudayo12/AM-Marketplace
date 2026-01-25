@@ -120,4 +120,4 @@ class WhatsAppManager {
 }
 
 // Export instance
-const whatsappManager = new WhatsAppManager();
+window.whatsappManager = new WhatsAppManager();

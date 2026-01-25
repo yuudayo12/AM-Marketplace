@@ -128,6 +128,12 @@
     });
 
     async function loadProductDetail() {
+      // Check if managers exist
+      if (!window.productManager || !window.whatsappManager) {
+        showError('Fail sistem (products.js/whatsapp.js) tidak dapat dimuatkan.');
+        return;
+      }
+
       // Get product ID from URL
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');

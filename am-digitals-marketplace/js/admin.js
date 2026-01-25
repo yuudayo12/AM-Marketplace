@@ -38,9 +38,20 @@ let allProducts = [];
 async function initAdmin() {
     console.log("Initializing admin panel...");
 
+    // Check if managers exist
+    const missing = [];
+    if (!window.authManager) missing.push("auth.js");
+    if (!window.productManager) missing.push("products.js");
+
+    if (missing.length > 0) {
+        console.error("Critical managers not loaded:", missing.join(", "));
+        const tbody = document.getElementById('productsTableBody');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Ralat kritikal: Fail [${missing.join(", ")}] tidak dapat dimuatkan. Sila refresh halaman atau periksa sambungan internet anda.</td></tr>`;
+        return;
+    }
+
     // Protect this page
     if (!authManager.protectPage('login.html')) {
-        console.warn("User not authenticated, redirecting...");
         return;
     }
 
@@ -51,7 +62,10 @@ async function initAdmin() {
         // Jika empty, cuba load dari JSON
         if (!products || products.length === 0) {
             console.log('No products in storage, loading from JSON...');
-            products = await productManager.loadDefaultProducts();
+            products = await productManager.loadDefaultProducts().catch(err => {
+                console.error("Failed to load defaults:", err);
+                return [];
+            });
         }
 
         allProducts = products || [];
@@ -60,10 +74,20 @@ async function initAdmin() {
         updateSessionInfo();
 
         setInterval(updateSessionInfo, 60000);
+
+        // Add overlay click to close
+        const overlay = document.getElementById('modalOverlay');
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) window.closeModal();
+            });
+        }
+
         console.log("Admin panel ready!");
 
     } catch (error) {
         console.error('Error initializing admin:', error);
+        alert("Ralat semasa memulakan Admin Panel: " + error.message);
     }
 }
 
@@ -77,7 +101,7 @@ window.renderProducts = function (products) {
             <tr>
                 <td colspan="6" style="text-align: center; padding: 3rem;">
                     <h3 style="color: var(--text-muted);">Tiada Produk</h3>
-                    <p style="color: var(--text-muted);">Klik "Load Sample Products" untuk muat data sample.</p>
+                    <p style="color: var(--text-muted);">Klik "Tambah Produk" untuk mula.</p>
                 </td>
             </tr>
         `;
@@ -123,6 +147,7 @@ window.openAddModal = function () {
     document.getElementById('btnSubmit').textContent = 'Tambah Produk';
     document.getElementById('productForm').reset();
     document.getElementById('modalOverlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scroll
 };
 
 window.openEditModal = function (productId) {
@@ -145,10 +170,12 @@ window.openEditModal = function (productId) {
     document.getElementById('productDescription').value = product.description;
 
     document.getElementById('modalOverlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 };
 
 window.closeModal = function () {
     document.getElementById('modalOverlay').classList.add('hidden');
+    document.body.style.overflow = '';
     editingProductId = null;
 };
 
@@ -176,7 +203,7 @@ window.handleFormSubmit = function (e) {
         closeModal();
         showToast('Berjaya simpan!', 'success');
     } catch (error) {
-        alert('Ralat: ' + error.message);
+        alert('Ralat semasa menyimpan: ' + error.message);
     }
 };
 
@@ -194,31 +221,34 @@ window.confirmDelete = function (productId) {
 };
 
 window.searchProducts = function () {
-    const query = document.getElementById('searchInput').value.toLowerCase();
+    const query = (document.getElementById('searchInput').value || '').toLowerCase();
     const filtered = allProducts.filter(p =>
-        p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)
+        (p.name && p.name.toLowerCase().includes(query)) ||
+        (p.category && p.category.toLowerCase().includes(query))
     );
     renderProducts(filtered);
 };
 
 window.loadSampleProducts = async function () {
-    if (confirm('Muat 20 sample?')) {
-        allProducts = await productManager.resetToDefault();
+    if (confirm('Muat data sample?')) {
+        const products = await productManager.resetToDefault();
+        allProducts = products || [];
         renderProducts(allProducts);
         updateStats(allProducts);
     }
 };
 
 window.resetToDefault = async function () {
-    if (confirm('Reset data?')) {
-        allProducts = await productManager.resetToDefault();
+    if (confirm('Padam semua data dan reset ke asal?')) {
+        const products = await productManager.resetToDefault();
+        allProducts = products || [];
         renderProducts(allProducts);
         updateStats(allProducts);
     }
 };
 
 window.deleteAllProducts = function () {
-    if (confirm('PADAM SEMUA?')) {
+    if (confirm('Adakah anda pasti mahu PADAM SEMUA produk? Tindakan ini tidak boleh diundur.')) {
         productManager.saveProducts([]);
         allProducts = [];
         renderProducts([]);
@@ -227,32 +257,40 @@ window.deleteAllProducts = function () {
 };
 
 window.updateStats = function (products) {
-    document.getElementById('quickTotal').textContent = products.length;
-    const catCount = [...new Set(products.map(p => p.category))].length;
-    document.getElementById('quickCategories').textContent = catCount;
-    const totalV = products.reduce((s, p) => s + parseFloat(p.price), 0);
-    document.getElementById('quickValue').textContent = `RM ${totalV.toFixed(2)}`;
+    const stats = productManager.getStats();
+
+    document.getElementById('quickTotal').textContent = stats.totalProducts;
+    document.getElementById('quickCategories').textContent = stats.categories;
+    document.getElementById('quickAvg').textContent = `RM ${stats.avgPrice.toFixed(2)}`;
+    document.getElementById('quickValue').textContent = `RM ${stats.totalValue.toFixed(2)}`;
 };
 
 window.showToast = function (message, type = 'success') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.right = '20px';
-    toast.style.background = type === 'success' ? '#10b981' : '#ef4444';
-    toast.style.color = 'white';
-    toast.style.padding = '1rem 2rem';
-    toast.style.borderRadius = '8px';
-    toast.style.zIndex = '9999';
+
+    // Explicit styles in case CSS isn't loaded correctly
+    Object.assign(toast.style, {
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        background: type === 'success' ? '#10b981' : '#ef4444',
+        color: 'white',
+        padding: '1rem 2rem',
+        borderRadius: '8px',
+        zIndex: '9999',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        animation: 'slide-in-right 0.3s ease-out'
+    });
+
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 3000);
 };
 
 // RUN INITIALIZATION
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAdmin);
-} else {
-    initAdmin();
-}
+window.onload = initAdmin;

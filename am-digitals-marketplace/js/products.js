@@ -33,85 +33,105 @@ class ProductManager {
 
   // Get all products
   getProducts() {
-    const stored = localStorage.getItem(this.storageKey);
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error('Error parsing products from storage:', error);
+      return [];
+    }
   }
 
   // Get product by ID
   getProductById(id) {
-    const products = this.getProducts();
-    return products.find(product => product.id === id);
+    try {
+      const products = this.getProducts();
+      return products.find(product => String(product.id) === String(id));
+    } catch (error) {
+      return null;
+    }
   }
 
   // Save products to localStorage
   saveProducts(products) {
-    localStorage.setItem(this.storageKey, JSON.stringify(products));
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(products));
+      return true;
+    } catch (error) {
+      console.error('Error saving products:', error);
+      return false;
+    }
   }
 
   // Add new product
   addProduct(productData) {
     const products = this.getProducts();
-    
+
     // Generate new ID
     const newId = this.generateId(products);
-    
+
     const newProduct = {
       id: newId,
-      name: productData.name,
-      price: parseFloat(productData.price),
-      category: productData.category,
-      image: productData.image,
-      description: productData.description
+      name: productData.name || 'Produk Tanpa Nama',
+      price: parseFloat(productData.price) || 0,
+      category: productData.category || 'Lain-lain',
+      image: productData.image || 'https://via.placeholder.com/800x600?text=AM+Digitals',
+      description: productData.description || ''
     };
 
     products.push(newProduct);
     this.saveProducts(products);
-    
+
     return newProduct;
   }
 
   // Update existing product
   updateProduct(id, productData) {
     const products = this.getProducts();
-    const index = products.findIndex(p => p.id === id);
-    
+    const index = products.findIndex(p => String(p.id) === String(id));
+
     if (index !== -1) {
       products[index] = {
         ...products[index],
         ...productData,
-        price: parseFloat(productData.price)
+        price: parseFloat(productData.price) || 0
       };
       this.saveProducts(products);
       return products[index];
     }
-    
+
     return null;
   }
 
   // Delete product
   deleteProduct(id) {
     const products = this.getProducts();
-    const filtered = products.filter(p => p.id !== id);
+    const filtered = products.filter(p => String(p.id) !== String(id));
     this.saveProducts(filtered);
     return filtered.length < products.length;
   }
 
   // Generate unique ID
   generateId(products) {
-    if (products.length === 0) return '1';
-    const maxId = Math.max(...products.map(p => parseInt(p.id) || 0));
+    if (!products || products.length === 0) return '1';
+    const ids = products.map(p => parseInt(p.id)).filter(id => !isNaN(id));
+    if (ids.length === 0) return '1';
+    const maxId = Math.max(...ids);
     return String(maxId + 1);
   }
 
   // Search products
   searchProducts(query) {
     const products = this.getProducts();
+    if (!query) return products;
     const lowercaseQuery = query.toLowerCase();
-    
-    return products.filter(product => 
-      product.name.toLowerCase().includes(lowercaseQuery) ||
-      product.description.toLowerCase().includes(lowercaseQuery) ||
-      product.category.toLowerCase().includes(lowercaseQuery)
+
+    return products.filter(product =>
+      (product.name && product.name.toLowerCase().includes(lowercaseQuery)) ||
+      (product.description && product.description.toLowerCase().includes(lowercaseQuery)) ||
+      (product.category && product.category.toLowerCase().includes(lowercaseQuery))
     );
   }
 
@@ -125,20 +145,19 @@ class ProductManager {
   // Get all unique categories
   getCategories() {
     const products = this.getProducts();
-    const categories = products.map(p => p.category);
+    const categories = products.map(p => p.category).filter(Boolean);
     return [...new Set(categories)].sort();
   }
 
   // Get statistics
   getStats() {
     const products = this.getProducts();
-    
+    const totalValue = products.reduce((sum, p) => sum + (parseFloat(p.price) || 0), 0);
+
     return {
       totalProducts: products.length,
-      totalValue: products.reduce((sum, p) => sum + p.price, 0),
-      avgPrice: products.length > 0 
-        ? (products.reduce((sum, p) => sum + p.price, 0) / products.length) 
-        : 0,
+      totalValue: totalValue,
+      avgPrice: products.length > 0 ? (totalValue / products.length) : 0,
       categories: this.getCategories().length
     };
   }
@@ -156,4 +175,4 @@ class ProductManager {
 }
 
 // Export for use in other files
-const productManager = new ProductManager();
+window.productManager = new ProductManager();

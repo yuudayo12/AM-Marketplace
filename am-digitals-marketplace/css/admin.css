@@ -188,6 +188,7 @@
     max-width: 300px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -254,13 +255,20 @@
     backdrop-filter: blur(4px);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    /* Better for scrollable content */
     z-index: var(--z-modal);
-    padding: var(--space-md);
+    padding: var(--space-xl) var(--space-md);
+    overflow-y: auto;
+    /* Allow scrolling the overlay if modal is too tall */
+    cursor: pointer;
+    /* To indicate you can click outside to close */
     animation: fade-in 0.3s ease-out;
 }
 
 .modal {
+    cursor: default;
+    /* Reset cursor for modal content */
     background: white;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-premium);

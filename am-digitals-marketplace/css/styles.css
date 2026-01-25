@@ -477,7 +477,7 @@ a:hover {
 .mb-lg { margin-bottom: var(--space-lg); }
 .mb-xl { margin-bottom: var(--space-xl); }
 
-.hidden { display: none; }
+.hidden { display: none !important; }
 .block { display: block; }
 .flex { display: flex; }
 .grid { display: grid; }

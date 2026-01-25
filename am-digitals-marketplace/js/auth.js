@@ -135,6 +135,8 @@ const authManager = {
         }
     }
 };
+// Export for use in other files
+window.authManager = authManager;
 
 // Auto-extend session on user activity
 let activityTimeout;

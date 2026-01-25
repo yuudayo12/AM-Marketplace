@@ -10,6 +10,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Initialize the app
 async function initializeApp() {
+  // Check if managers exist
+  if (!window.productManager || !window.whatsappManager) {
+    console.error("Critical managers not loaded!");
+    showError('Fail sistem (products.js/whatsapp.js) tidak dapat dimuatkan. Sila refresh halaman.');
+    return;
+  }
+
   showLoading();
 
   try {
