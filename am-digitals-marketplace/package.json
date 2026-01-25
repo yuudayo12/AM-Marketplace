@@ -1,0 +1,13 @@
+{
+  "name": "am-digitals-marketplace",
+  "version": "1.0.0",
+  "description": "Marketplace untuk menjual produk digital - AM Digitals",
+  "private": true,
+  "scripts": {
+    "dev": "python -m http.server 8080",
+    "start": "python -m http.server 8080"
+  },
+  "keywords": ["marketplace", "digital-products", "malay"],
+  "author": "AM Digitals",
+  "license": "MIT"
+}

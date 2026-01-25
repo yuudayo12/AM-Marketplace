@@ -1,0 +1,400 @@
+/* ============================================
+   PRODUCT DETAIL PAGE STYLES
+   ============================================ */
+
+/* ===== DETAIL CONTAINER ===== */
+.product-detail-container {
+    padding: var(--space-xl) 0;
+    min-height: 80vh;
+}
+
+/* Back button */
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    margin-bottom: var(--space-lg);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+}
+
+.back-button:hover {
+    color: var(--primary-color);
+    background: var(--bg-secondary);
+    transform: translateX(-4px);
+}
+
+.back-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ===== PRODUCT DETAIL LAYOUT ===== */
+.product-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2xl);
+    margin-bottom: var(--space-2xl);
+}
+
+/* ===== IMAGE SECTION ===== */
+.product-detail-image-section {
+    position: relative;
+}
+
+.product-detail-image-container {
+    position: sticky;
+    top: 100px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-premium);
+    background: var(--bg-secondary);
+    aspect-ratio: 4/3;
+}
+
+.product-detail-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+
+.product-detail-image-container:hover .product-detail-image {
+    transform: scale(1.05);
+}
+
+/* Category badge */
+.detail-category-badge {
+    position: absolute;
+    top: var(--space-md);
+    left: var(--space-md);
+    background: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--primary-color);
+    box-shadow: var(--shadow-lg);
+    z-index: 10;
+}
+
+/* ===== INFO SECTION ===== */
+.product-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.product-detail-header {
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: var(--space-lg);
+}
+
+.product-detail-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    line-height: 1.2;
+}
+
+/* ===== PRICE SECTION ===== */
+.product-detail-price-section {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.detail-price-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.product-detail-price {
+    font-size: 3rem;
+    font-weight: 900;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+
+/* ===== DESCRIPTION ===== */
+.product-detail-description-section {
+    background: var(--bg-secondary);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--primary-color);
+}
+
+.detail-section-title {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    color: var(--text-primary);
+}
+
+.product-detail-description {
+    font-size: var(--font-size-base);
+    line-height: 1.8;
+    color: var(--text-secondary);
+    white-space: pre-line;
+}
+
+/* ===== FEATURES LIST (Optional) ===== */
+.product-features {
+    list-style: none;
+    padding: 0;
+}
+
+.product-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm) 0;
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+}
+
+.product-features li::before {
+    content: '✓';
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+}
+
+/* ===== CTA SECTION ===== */
+.product-detail-cta {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--primary-light);
+}
+
+.cta-title {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+}
+
+.cta-description {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.whatsapp-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: 1.25rem 2rem;
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-base);
+    text-decoration: none;
+    min-height: 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+.whatsapp-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.whatsapp-button:hover::before {
+    left: 100%;
+}
+
+.whatsapp-button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-premium);
+}
+
+.whatsapp-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.whatsapp-button svg {
+    width: 28px;
+    height: 28px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* ===== INFO BADGES ===== */
+.product-info-badges {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.info-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.info-badge svg {
+    width: 16px;
+    height: 16px;
+    color: var(--primary-color);
+}
+
+/* ===== LOADING STATE ===== */
+.detail-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* ===== ERROR STATE ===== */
+.detail-error {
+    text-align: center;
+    padding: var(--space-2xl);
+}
+
+.detail-error h3 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--space-md);
+    color: var(--text-primary);
+}
+
+.detail-error p {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .product-detail {
+        grid-template-columns: 1fr;
+        gap: var(--space-xl);
+    }
+
+    .product-detail-image-container {
+        position: relative;
+        top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-detail-title {
+        font-size: var(--font-size-2xl);
+    }
+
+    .product-detail-price {
+        font-size: 2.5rem;
+    }
+
+    .product-detail-description-section,
+    .product-detail-cta {
+        padding: var(--space-md);
+    }
+
+    .whatsapp-button {
+        padding: 1rem 1.5rem;
+        font-size: var(--font-size-base);
+    }
+}
+
+@media (max-width: 480px) {
+    .product-detail-container {
+        padding: var(--space-md) 0;
+    }
+
+    .product-detail {
+        gap: var(--space-lg);
+    }
+
+    .product-detail-title {
+        font-size: var(--font-size-xl);
+    }
+
+    .product-detail-price {
+        font-size: 2rem;
+    }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fade-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-detail-info>* {
+    animation: fade-slide-up 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.product-detail-header {
+    animation-delay: 0.1s;
+}
+
+.product-detail-description-section {
+    animation-delay: 0.2s;
+}
+
+.product-detail-cta {
+    animation-delay: 0.3s;
+}
+
+/* Shimmer effect saat loading image */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.detail-image-loading {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}

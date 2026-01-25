@@ -1,0 +1,162 @@
+[
+    {
+        "id": "1",
+        "name": "Template Website Perniagaan Premium",
+        "price": 150,
+        "category": "Web Template",
+        "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80",
+        "description": "Template website yang lengkap untuk perniagaan kecil dan sederhana. Termasuk 10+ halaman responsif, modern design, mudah customize. Sesuai untuk syarikat, kedai, atau freelancer. File termasuk HTML, CSS, dan JavaScript."
+    },
+    {
+        "id": "2",
+        "name": "Ebook Panduan Bisnes Online 2026",
+        "price": 45,
+        "category": "Ebook",
+        "image": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&q=80",
+        "description": "Panduan lengkap memulakan bisnes online dari sifar. 150+ muka surat dengan strategi terkini, tips marketing, dan case studies. Ditulis oleh pengusaha berjaya dengan pengalaman 10 tahun. Format: PDF & EPUB."
+    },
+    {
+        "id": "3",
+        "name": "Pack 500+ Icon Premium Vector",
+        "price": 75,
+        "category": "Graphic Asset",
+        "image": "https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&q=80",
+        "description": "Collection eksklusif 500+ icon vector berkualiti tinggi. Sesuai untuk web, app, presentation, dan design. Format: SVG, AI, PNG. Boleh edit warna dan size tanpa kehilangan kualiti. 20+ kategori berbeza."
+    },
+    {
+        "id": "4",
+        "name": "Course: Social Media Marketing Mastery",
+        "price": 299,
+        "category": "Online Course",
+        "image": "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80",
+        "description": "Kursus video lengkap 20+ jam mengenai social media marketing. Belajar strategi untuk Facebook, Instagram, TikTok, dan LinkedIn. Termasuk template, checklist, dan tools. Akses seumur hidup dengan updates percuma."
+    },
+    {
+        "id": "5",
+        "name": "Template Canva Pro - 100 Design",
+        "price": 59,
+        "category": "Design Template",
+        "image": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80",
+        "description": "100 template Canva siap guna untuk social media, poster, flyer, dan presentation. Mudah edit dengan Canva account percuma. Design professional dan menarik. Sesuai untuk business owner dan content creator."
+    },
+    {
+        "id": "6",
+        "name": "Plugin WordPress SEO Ultimate",
+        "price": 89,
+        "category": "WordPress Plugin",
+        "image": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80",
+        "description": "Plugin WordPress all-in-one untuk optimasi SEO. Features: schema markup, sitemap auto, speed optimization, content analysis. Compatible dengan WordPress 5.0+. Termasuk support dan updates selama 1 tahun."
+    },
+    {
+        "id": "7",
+        "name": "Font Bundle - 50 Premium Fonts",
+        "price": 125,
+        "category": "Font Collection",
+        "image": "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80",
+        "description": "Collection 50 premium fonts untuk commercial use. Termasuk sans-serif, serif, script, dan display fonts. Format: OTF, TTF, WOFF. License untuk projek unlimited tanpa royalty. Perfect untuk branding dan design."
+    },
+    {
+        "id": "8",
+        "name": "Mobile App UI Kit (Figma)",
+        "price": 179,
+        "category": "UI Kit",
+        "image": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
+        "description": "UI Kit lengkap untuk mobile app dengan 100+ screens. Design modern dan clean. Termasuk components, icons, dan style guide. Fully editable dalam Figma. Sesuai untuk iOS dan Android apps. Light & dark mode."
+    },
+    {
+        "id": "9",
+        "name": "Stock Photo Bundle - 1000 Gambar",
+        "price": 199,
+        "category": "Stock Photos",
+        "image": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80",
+        "description": "1000+ gambar stock berkualiti tinggi untuk kegunaan komersial. Resolusi 4K+. Kategori: business, lifestyle, tech, nature, food. License royalty-free untuk projek unlimited. Format: JPG high resolution."
+    },
+    {
+        "id": "10",
+        "name": "Spreadsheet Kira Untung Rugi Automatik",
+        "price": 35,
+        "category": "Excel Template",
+        "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80",
+        "description": "Template Excel/Google Sheets untuk kira untung rugi bisnes secara automatik. Termasuk dashboard visual, profit calculation, expense tracking, dan monthly reports. Mudah guna, tiada formula rumit. Include video tutorial."
+    },
+    {
+        "id": "11",
+        "name": "Video Background Loop - 50 Clips",
+        "price": 95,
+        "category": "Video Assets",
+        "image": "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80",
+        "description": "50 video background loop berkualiti 4K untuk website, presentation, atau video editing. Duration 10-30 saat each. Categories: abstract, nature, tech, motion graphics. Format: MP4, MOV. Royalty-free license."
+    },
+    {
+        "id": "12",
+        "name": "Checklist Automation dengan Formula",
+        "price": 29,
+        "category": "Productivity Tool",
+        "image": "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&q=80",
+        "description": "Smart checklist system dengan automation features. Track tasks, due dates, priorities. Auto-reminder dan progress tracking. Compatible dengan Excel dan Google Sheets. Sesuai untuk project management dan daily tasks."
+    },
+    {
+        "id": "13",
+        "name": "Sound Effects Library - 500 Sounds",
+        "price": 139,
+        "category": "Audio Assets",
+        "image": "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&q=80",
+        "description": "Library 500+ sound effects berkualiti pro untuk video, game, atau podcast. Categories: UI sounds, nature, transitions, whoosh, impacts. Format: WAV, MP3. Professional recording quality. Commercial use license."
+    },
+    {
+        "id": "14",
+        "name": "Instagram Story Templates - 200 Design",
+        "price": 49,
+        "category": "Social Media Template",
+        "image": "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=800&q=80",
+        "description": "200 Instagram Story templates yang viral dan engaging. Mudah edit dengan Canva atau Photoshop. Design trendy dan eye-catching. Sesuai untuk brand, influencer, atau business. Update monthly dengan design baru."
+    },
+    {
+        "id": "15",
+        "name": "Email Marketing Template Pack",
+        "price": 69,
+        "category": "Email Template",
+        "image": "https://images.unsplash.com/photo-1557200134-90327ee9fafa?w=800&q=80",
+        "description": "50+ email marketing templates responsif untuk campaign. Compatible dengan Mailchimp, ConvertKit, dan platform lain. Design professional, high conversion rate. Termasuk: newsletter, promo, onboarding, dan follow-up emails."
+    },
+    {
+        "id": "16",
+        "name": "Dashboard Admin Template (React)",
+        "price": 249,
+        "category": "Web Template",
+        "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
+        "description": "Admin dashboard template modern built dengan React dan Material-UI. 50+ pages, charts, tables, forms. Fully responsive dan customizable. Clean code dan dokumentasi lengkap. Regular updates dan support."
+    },
+    {
+        "id": "17",
+        "name": "Landing Page Conversion Booster Kit",
+        "price": 99,
+        "category": "Web Template",
+        "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80",
+        "description": "10 landing page templates yang proven tingkatkan conversion. Design psychology-based, mobile optimized, fast loading. Termasuk A/B testing guide dan copywriting tips. Format: HTML, CSS, JS. Easy to integrate."
+    },
+    {
+        "id": "18",
+        "name": "Ebook: Strategi Content Marketing 2026",
+        "price": 39,
+        "category": "Ebook",
+        "image": "https://images.unsplash.com/photo-1456324463128-7ff6903988d8?w=800&q=80",
+        "description": "Panduan praktikal content marketing dengan strategi terkini untuk 2026. 100+ muka surat dengan case studies, content calendar template, dan SEO tips. Actionable strategies untuk tingkatkan engagement dan sales."
+    },
+    {
+        "id": "19",
+        "name": "Resume/CV Templates - 25 Design",
+        "price": 45,
+        "category": "Document Template",
+        "image": "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&q=80",
+        "description": "25 professional resume and CV templates. Modern design yang attractive untuk HR. Format: Word, Google Docs, PDF. Easy to edit, ATS-friendly. Termasuk cover letter templates dan panduan writing tips."
+    },
+    {
+        "id": "20",
+        "name": "Animation Pack - 100 Lottie Files",
+        "price": 159,
+        "category": "Animation Assets",
+        "image": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80",
+        "description": "100 smooth Lottie animations untuk website dan mobile apps. Lightweight, scalable, dan high performance. Categories: loading, success, error, illustrations. Format: JSON (Lottie). Compatible dengan semua major frameworks."
+    }
+]

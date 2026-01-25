@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Panel - AM Digitals</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/admin.css">
+
+    <style>
+        /* Quick debug styles */
+        .debug-info {
+            background: #f0f0f0;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .btn-test {
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="admin-container">
+        <div class="container">
+
+            <h1 style="margin: 2rem 0;">🧪 Test Admin Panel</h1>
+
+            <!-- Debug Info -->
+            <div class="debug-info">
+                <h3>Debug Information:</h3>
+                <p id="debugInfo">Loading...</p>
+                <button class="btn-test" onclick="testProducts()">Test Load Products</button>
+                <button class="btn-test" onclick="testDelete()">Test Delete Function</button>
+            </div>
+
+            <!-- Statistics -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Jumlah Produk</div>
+                    <div class="stat-value" id="totalProducts">0</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Status</div>
+                    <div class="stat-value" id="statusInfo" style="font-size: 1rem;">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Simple Products Table -->
+            <div class="admin-products-section">
+                <div class="section-header">
+                    <h2 class="section-title">Senarai Produk (Test)</h2>
+                </div>
+
+                <div class="products-table-container">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nama Produk</th>
+                                <th>Harga</th>
+                                <th>Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 2rem;">
+                                    Loading products...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="./js/products.js"></script>
+    <script src="./js/whatsapp.js"></script>
+
+    <script>
+        // Test Script
+        console.log('Test Admin Panel Loading...');
+
+        // Wait for DOM
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOM Loaded');
+            await initTest();
+        });
+
+        async function initTest() {
+            try {
+                // Check if productManager exists
+                if (typeof productManager === 'undefined') {
+                    document.getElementById('debugInfo').innerHTML = '❌ ERROR: productManager tidak dijumpai!<br>File js/products.js mungkin tidak load.';
+                    document.getElementById('statusInfo').textContent = 'ERROR';
+                    return;
+                }
+
+                // Load products
+                let products = productManager.getProducts();
+
+                if (products.length === 0) {
+                    console.log('No products in LocalStorage, loading from JSON...');
+                    products = await productManager.loadDefaultProducts();
+                }
+
+                console.log('Products loaded:', products.length);
+
+                // Update debug info
+                document.getElementById('debugInfo').innerHTML = `
+                    ✅ productManager: OK<br>
+                    ✅ Products loaded: ${products.length}<br>
+                    ✅ LocalStorage key: am_digitals_products<br>
+                    ✅ Ready to test!
+                `;
+
+                document.getElementById('statusInfo').textContent = 'OK ✓';
+                document.getElementById('totalProducts').textContent = products.length;
+
+                // Render table
+                renderTestTable(products);
+
+            } catch (error) {
+                console.error('Error in initTest:', error);
+                document.getElementById('debugInfo').innerHTML = `❌ ERROR: ${error.message}`;
+                document.getElementById('statusInfo').textContent = 'ERROR';
+            }
+        }
+
+        function renderTestTable(products) {
+            const tbody = document.getElementById('testTableBody');
+
+            if (products.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem;">
+                            Tiada produk. Klik "Test Load Products" untuk load.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = products.map(product => `
+                <tr>
+                    <td>${product.id}</td>
+                    <td>${product.name}</td>
+                    <td>RM ${product.price.toFixed(2)}</td>
+                    <td>
+                        <button 
+                            class="btn-icon btn-edit" 
+                            onclick="testEdit('${product.id}')"
+                            title="Edit"
+                            style="margin-right: 0.5rem;"
+                        >
+                            ✏️ Edit
+                        </button>
+                        <button 
+                            class="btn-icon btn-delete" 
+                            onclick="testDeleteProduct('${product.id}')"
+                            title="Delete"
+                        >
+                            🗑️ Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            console.log('Table rendered with', products.length, 'products');
+        }
+
+        function testProducts() {
+            console.log('Testing product load...');
+            const products = productManager.getProducts();
+            alert(`Total products: ${products.length}\n\nCheck console for details.`);
+            console.log('Products:', products);
+        }
+
+        function testEdit(productId) {
+            const product = productManager.getProductById(productId);
+            alert(`EDIT PRODUCT:\n\nID: ${productId}\nName: ${product.name}\nPrice: RM ${product.price}`);
+            console.log('Edit product:', product);
+        }
+
+        function testDeleteProduct(productId) {
+            const product = productManager.getProductById(productId);
+
+            if (!product) {
+                alert('Product not found!');
+                return;
+            }
+
+            const confirmed = confirm(`DELETE PRODUCT?\n\nID: ${productId}\nName: ${product.name}\n\nAre you sure?`);
+
+            if (confirmed) {
+                const success = productManager.deleteProduct(productId);
+
+                if (success) {
+                    alert('✅ Product deleted successfully!');
+
+                    // Refresh table
+                    const products = productManager.getProducts();
+                    renderTestTable(products);
+                    document.getElementById('totalProducts').textContent = products.length;
+                } else {
+                    alert('❌ Failed to delete product!');
+                }
+            }
+        }
+
+        function testDelete() {
+            const products = productManager.getProducts();
+            if (products.length > 0) {
+                alert(`Click the 🗑️ Delete button next to any product in the table below to test delete functionality.\n\nTotal products: ${products.length}`);
+            } else {
+                alert('No products to delete. Load products first!');
+            }
+        }
+    </script>
+
+</body>
+
+</html>
