@@ -61,9 +61,18 @@ async def session_middleware(request: Request, call_next):
     request.state.session_id = sid
     response = await call_next(request)
     if new:
-        response.set_cookie(
-            SESSION_COOKIE, sid, httponly=True, samesite="lax", secure=settings.cookie_secure, max_age=60 * 60 * 24
-        )
+        if settings.embedded:
+            # Inside an iframe on another site (e.g. Colab's notebook output) a Lax cookie is a
+            # third-party cookie and is dropped. SameSite=None + Partitioned (CHIPS) is accepted
+            # by browsers that block third-party cookies.
+            response.headers.append(
+                "set-cookie",
+                f"{SESSION_COOKIE}={sid}; Max-Age=86400; Path=/; HttpOnly; Secure; SameSite=None; Partitioned",
+            )
+        else:
+            response.set_cookie(
+                SESSION_COOKIE, sid, httponly=True, samesite="lax", secure=settings.cookie_secure, max_age=60 * 60 * 24
+            )
     return response
 
 

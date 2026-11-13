@@ -53,6 +53,9 @@ class Settings:
     # Comma-separated list of allowed CORS origins (only needed if the frontend runs on another origin).
     cors_origins: str = field(default_factory=lambda: _env("CORS_ORIGINS", ""))
     cookie_secure: bool = field(default_factory=lambda: _env_bool("COOKIE_SECURE", False))
+    # Served inside a cross-site iframe (Colab notebook output) via HTTPS: use a partitioned
+    # SameSite=None cookie so the session survives third-party cookie blocking.
+    embedded: bool = field(default_factory=lambda: _env_bool("EMBEDDED", False))
 
     @property
     def max_upload_bytes(self) -> int:

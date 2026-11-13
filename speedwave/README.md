@@ -30,9 +30,12 @@ speedwave/
 1. Open [`SpeedWave_Colab.ipynb`](SpeedWave_Colab.ipynb) in Google Colab (badge above, after this branch is
    merged into `main`; before that, use the commit link from the pull request / chat).
 2. **Runtime → Run all**, then wait 2–4 minutes.
-3. Click **🚀 Open SpeedWave**. The app opens at a Google link (`…colab.googleusercontent.com`). It works
-   only in that browser, signed in to the same Google account.
-4. Optional: step 4 creates a public `trycloudflare.com` link for your phone or another browser.
+3. Click **🚀 Open SpeedWave** in step 3. This is a temporary `https://….trycloudflare.com` link that works
+   in any browser, including a phone. It is public while it runs, so share it only with people you trust.
+4. If step 3 can't create a link, run **step 3B**: SpeedWave then appears inside the notebook.
+
+Colab's own port links (`…colab.dev`) aren't used. They often fail with an empty **HTTP 404** when the
+browser blocks third-party cookies, which Colab uses to check who you are.
 
 Colab installs a static FFmpeg build with Rubber Band 3 (R3 engine). If that download fails, it falls back
 to Ubuntu's FFmpeg (R2). The notebook prints which engine is active.
@@ -118,6 +121,7 @@ cd backend && .venv/bin/pytest          # 64 tests, about 1 minute
 | `SPEEDWAVE_URL_TIMEOUT_SECONDS` | `30` | URL download timeout |
 | `SPEEDWAVE_CORS_ORIGINS` | – | Only needed if the UI is hosted on a different origin |
 | `SPEEDWAVE_COOKIE_SECURE` | `0` | Set `1` when serving over HTTPS |
+| `SPEEDWAVE_EMBEDDED` | `0` | Set `1` when the app runs inside a cross-site iframe or tunnel (Colab). It uses a `SameSite=None; Secure; Partitioned` session cookie |
 
 ## 4. How to use
 

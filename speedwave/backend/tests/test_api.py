@@ -431,3 +431,13 @@ def test_public_drive_file_saved_with_its_name(tmp_path, signals):
     resp = _fake(200, "audio/mpeg", signals["mp3"].read_bytes(), "attachment; filename=\"Lagu Saya.mp3\"")
     path, name, size = url_import._save(resp, DIRECT, tmp_path, 10**8, "gdrive")
     assert name == "Lagu Saya.mp3" and path.suffix == ".mp3" and size == signals["mp3"].stat().st_size
+
+
+def test_embedded_mode_uses_partitioned_cookie(monkeypatch, data_dir):
+    monkeypatch.setattr(settings, "embedded", True)
+    with TestClient(app, base_url="https://testserver") as c:
+        r = c.get("/api/config")
+        cookie = r.headers["set-cookie"]
+        assert "SameSite=None" in cookie and "Secure" in cookie and "Partitioned" in cookie
+        sid = r.cookies.get("sw_session")
+        assert sid and c.get("/api/config", cookies={"sw_session": sid}).headers.get("set-cookie") is None
