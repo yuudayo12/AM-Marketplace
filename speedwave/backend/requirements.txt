@@ -3,3 +3,7 @@ uvicorn[standard]==0.34.2
 python-multipart==0.0.20
 httpx==0.28.1
 numpy>=1.26
+# Media-platform import (YouTube, SoundCloud, ...). Keep yt-dlp up to date: platforms change often.
+yt-dlp[default]>=2026.10.26
+# JavaScript runtime yt-dlp needs for YouTube.
+deno>=2.0

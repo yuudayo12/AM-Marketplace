@@ -16,9 +16,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-from . import audio, url_import
+from . import audio, media_import, url_import
 from .config import settings
-from .store import ID_RE, JobSettings, Source, store
+from .store import ID_RE, JobSettings, Source, register_source, store
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("speedwave")
@@ -127,6 +127,11 @@ def config():
         "quality_modes": [{"id": k, "label": v["label"], "description": v["description"]} for k, v in audio.QUALITY_MODES.items()],
         "default_quality": audio.DEFAULT_QUALITY,
         "r3_available": audio.r3_available(),
+        "platform_import": {
+            "enabled": media_import.available(),
+            "yt_dlp": media_import.version(),
+            "js_runtime": bool(media_import.js_runtime()),
+        },
     }
 
 
@@ -135,16 +140,9 @@ def config():
 
 async def _register(session_id: str, source_id: str, d: Path, path: Path, name: str, size: int, origin: str) -> Source:
     try:
-        info = await asyncio.to_thread(audio.probe, path)
-        if info.duration > settings.max_duration_minutes * 60:
-            raise audio.AudioError(f"The audio is longer than the {settings.max_duration_minutes}-minute limit.")
+        return await asyncio.to_thread(register_source, session_id, source_id, d, path, name, size, origin)
     except audio.AudioError as e:
-        shutil.rmtree(d, ignore_errors=True)
         raise HTTPException(422, str(e))
-    src = Source(id=source_id, session_id=session_id, dir=d, path=path, original_name=name, size=size, info=info, origin=origin)
-    store.add_source(src)
-    log.info("Source %s: %s (%s, %.1fs, %d ch)", source_id, name, info.format_label, info.duration, info.channels)
-    return src
 
 
 @app.post("/api/sources/upload", status_code=201)
@@ -153,7 +151,7 @@ async def upload(request: Request, file: UploadFile = File(...)):
     name = Path((file.filename or "audio").replace("\\", "/")).name[:255] or "audio"
     ext = Path(name).suffix.lower()
     if ext not in audio.INPUT_EXTENSIONS:
-        raise HTTPException(415, "Unsupported file type. Supported formats: MP3, WAV, OGG, FLAC, M4A, AAC.")
+        raise HTTPException(415, "Unsupported file type. Supported formats: MP3, WAV, OGG, FLAC, M4A, AAC, WEBM.")
 
     source_id, d = store.new_source_dir(session_id)
     dest = d / f"source{ext}"
@@ -197,6 +195,36 @@ async def import_url(request: Request, body: UrlImportRequest):
     return src.to_dict()
 
 
+@app.post("/api/imports", status_code=202)
+async def start_import(request: Request, body: UrlImportRequest):
+    """Start a URL / platform import in the background; poll GET /api/imports/{id}."""
+    try:
+        url = url_import.validate_url(body.url)
+        kind, platform = url_import.source_kind(url)
+    except url_import.UrlImportError as e:
+        raise HTTPException(e.status, str(e))
+    return store.start_import(_session(request), url, kind, platform).to_dict()
+
+
+def _import_or_404(request: Request, import_id: str):
+    task = store.get_import(import_id, _session(request))
+    if task is None:
+        raise HTTPException(404, "Import not found.")
+    return task
+
+
+@app.get("/api/imports/{import_id}")
+def get_import(request: Request, import_id: str):
+    return _import_or_404(request, import_id).to_dict()
+
+
+@app.post("/api/imports/{import_id}/cancel")
+def cancel_import(request: Request, import_id: str):
+    task = _import_or_404(request, import_id)
+    task.cancel_event.set()
+    return task.to_dict()
+
+
 def _source_or_404(request: Request, source_id: str) -> Source:
     src = store.get_source(source_id, _session(request))
     if src is None:
@@ -212,9 +240,7 @@ def get_source(request: Request, source_id: str):
 @app.get("/api/sources/{source_id}/audio")
 def source_audio(request: Request, source_id: str):
     src = _source_or_404(request, source_id)
-    mime = {
-        "MP3": "audio/mpeg", "WAV": "audio/wav", "OGG": "audio/ogg", "FLAC": "audio/flac", "M4A": "audio/mp4", "AAC": "audio/aac",
-    }[src.info.format_label]
+    mime = audio.INPUT_MIME.get(src.info.format_label, "application/octet-stream")
     return FileResponse(src.path, media_type=mime, headers={"Cache-Control": "private, max-age=3600"})
 
 

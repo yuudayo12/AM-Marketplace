@@ -8,7 +8,7 @@ export function AudioInfo({ source, onRemove, locked }: { source: Source; onRemo
     <Panel
       step="02"
       title="Audio Information"
-      subtitle={source.origin === "url" ? "Imported from URL" : "Uploaded file"}
+      subtitle={source.origin === "platform" ? "Imported from a media platform" : source.origin === "url" ? "Imported from URL" : "Uploaded file"}
       right={
         <button
           onClick={onRemove}

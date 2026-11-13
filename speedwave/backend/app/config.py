@@ -39,6 +39,8 @@ class Settings:
     # URL import
     url_timeout_seconds: float = field(default_factory=lambda: float(_env("URL_TIMEOUT_SECONDS", "30")))
     url_max_redirects: int = field(default_factory=lambda: int(_env("URL_MAX_REDIRECTS", "5")))
+    # Import from media platforms (YouTube, SoundCloud, ...) via yt-dlp, when installed.
+    platform_import: bool = field(default_factory=lambda: _env_bool("PLATFORM_IMPORT", True))
     # Allow URLs that resolve to private / loopback addresses. Off by default (SSRF protection).
     allow_private_urls: bool = field(default_factory=lambda: _env_bool("ALLOW_PRIVATE_URLS", False))
     # Let the HTTP client honour HTTP(S)_PROXY / SSL_CERT_FILE environment variables.

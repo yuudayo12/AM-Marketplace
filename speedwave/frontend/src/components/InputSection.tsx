@@ -1,13 +1,13 @@
 import { useRef, useState } from "react";
-import type { AppConfig } from "../lib/api";
-import { formatBytes } from "../lib/format";
+import type { AppConfig, ImportTask } from "../lib/api";
+import { formatBytes, formatEta } from "../lib/format";
 import { IconLink, IconUpload, Panel, Spinner } from "./ui";
 
 export type Intake =
   | { kind: "idle" }
   | { kind: "uploading"; name: string; size: number; progress: number }
   | { kind: "analyzing"; name: string }
-  | { kind: "importing"; url: string };
+  | { kind: "importing"; url: string; task: ImportTask | null };
 
 interface Props {
   config: AppConfig | null;
@@ -30,7 +30,7 @@ export function InputSection({ config, intake, disabled, onFile, onUrl, onCancel
   };
 
   return (
-    <Panel step="01" title="Input" subtitle="Upload a file or import a direct audio link">
+    <Panel step="01" title="Input" subtitle="Upload a file, or paste a YouTube, SoundCloud, Drive or direct link">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -60,19 +60,13 @@ export function InputSection({ config, intake, disabled, onFile, onUrl, onCancel
               <button onClick={onCancel} className="text-slate-400 underline-offset-2 hover:text-rose-300 hover:underline">Cancel</button>
             </div>
           </div>
-        ) : intake.kind === "analyzing" || intake.kind === "importing" ? (
+        ) : intake.kind === "importing" ? (
+          <ImportProgress url={intake.url} task={intake.task} onCancel={onCancel} />
+        ) : intake.kind === "analyzing" ? (
           <div className="flex flex-col items-center gap-3 text-sm text-slate-300">
             <Spinner className="h-6 w-6 text-violet-400" />
-            <div>
-              {intake.kind === "analyzing" ? (
-                <>Analyzing <span className="font-medium text-slate-100">{intake.name}</span>…</>
-              ) : (
-                <>Downloading and validating the linked file…</>
-              )}
-            </div>
-            <div className="text-xs text-slate-500">
-              {intake.kind === "analyzing" ? "Reading metadata and checking the audio decodes correctly" : intake.url}
-            </div>
+            <div>Analyzing <span className="font-medium text-slate-100">{intake.name}</span>…</div>
+            <div className="text-xs text-slate-500">Reading metadata and checking the audio decodes correctly</div>
           </div>
         ) : (
           <>
@@ -114,7 +108,7 @@ export function InputSection({ config, intake, disabled, onFile, onUrl, onCancel
             inputMode="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://drive.google.com/file/d/… or https://…/track.mp3"
+            placeholder="YouTube, SoundCloud, Google Drive or https://…/track.mp3"
             disabled={busy || disabled}
             className="w-full rounded-xl border border-ink-600 bg-ink-850 py-3 pl-11 pr-4 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
           />
@@ -127,10 +121,51 @@ export function InputSection({ config, intake, disabled, onFile, onUrl, onCancel
           {intake.kind === "importing" ? <Spinner /> : <IconLink />} Import URL
         </button>
       </form>
-      <p className="mt-2 text-xs text-slate-500">
-        Direct file links and public Google Drive / Dropbox share links (set to “Anyone with the link”). Streaming
-        platform pages (YouTube, Spotify, SoundCloud…) and login-protected or DRM content are not supported.
+      <p className="mt-2 text-xs leading-relaxed text-slate-500">
+        {config?.platform_import.enabled ? (
+          <>
+            Works with <span className="text-slate-400">YouTube, SoundCloud, Bandcamp, Vimeo, Internet Archive</span> and{" "}
+            <a className="underline decoration-slate-600 underline-offset-2 hover:text-slate-300" href="https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md" target="_blank" rel="noreferrer">many more sites</a>,
+            public Google Drive / Dropbox share links and direct file links. Only public media: no logins, and no DRM services (Spotify, Apple Music…).
+          </>
+        ) : (
+          <>Direct file links and public Google Drive / Dropbox share links. Login-protected or DRM content is not supported.</>
+        )}{" "}
+        Only import content you own or have permission to use, and respect each platform's terms.
       </p>
     </Panel>
+  );
+}
+
+function ImportProgress({ url, task, onCancel }: { url: string; task: ImportTask | null; onCancel: () => void }) {
+  const pct = task?.progress != null ? Math.round(task.progress * 100) : null;
+  const analyzing = task?.status === "analyzing";
+  return (
+    <div className="mx-auto max-w-md text-left">
+      <div className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-100">
+        <Spinner className="h-4 w-4 text-violet-400" />
+        {task?.stage ?? "Connecting"}…
+        {task?.platform && <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-violet-300">{task.platform}</span>}
+      </div>
+      <div className="mb-4 truncate font-mono text-xs text-slate-500" title={url}>{url}</div>
+      <div className="h-2 overflow-hidden rounded-full bg-ink-700">
+        {pct != null || analyzing ? (
+          <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-azure-500 transition-[width] duration-300" style={{ width: `${analyzing ? 100 : pct}%` }} />
+        ) : (
+          <div className="h-full w-full animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(167,139,250,.6),transparent)] bg-[length:200%_100%]" />
+        )}
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3 font-mono text-xs text-slate-400">
+        <span className="truncate">
+          {analyzing
+            ? "Checking the audio decodes correctly"
+            : task && task.downloaded_bytes > 0
+              ? `${formatBytes(task.downloaded_bytes)}${task.total_bytes ? ` / ${formatBytes(task.total_bytes)}` : ""}${task.speed_bps ? ` · ${formatBytes(task.speed_bps)}/s` : ""}${task.eta_seconds != null ? ` · ${formatEta(task.eta_seconds)} left` : ""}`
+              : "Waiting for the server to respond"}
+        </span>
+        {pct != null && !analyzing && <span>{pct}%</span>}
+        <button onClick={onCancel} className="shrink-0 text-slate-400 underline-offset-2 hover:text-rose-300 hover:underline">Cancel</button>
+      </div>
+    </div>
   );
 }

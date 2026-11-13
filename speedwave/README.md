@@ -121,6 +121,7 @@ cd backend && .venv/bin/pytest          # 64 tests, about 1 minute
 | `SPEEDWAVE_URL_TIMEOUT_SECONDS` | `30` | URL download timeout |
 | `SPEEDWAVE_CORS_ORIGINS` | – | Only needed if the UI is hosted on a different origin |
 | `SPEEDWAVE_COOKIE_SECURE` | `0` | Set `1` when serving over HTTPS |
+| `SPEEDWAVE_PLATFORM_IMPORT` | `1` | Allow import from YouTube, SoundCloud and others via yt-dlp |
 | `SPEEDWAVE_EMBEDDED` | `0` | Set `1` when the app runs inside a cross-site iframe or tunnel (Colab). It uses a `SameSite=None; Secure; Partitioned` session cookie |
 
 ## 4. How to use
@@ -131,6 +132,11 @@ cd backend && .venv/bin/pytest          # 64 tests, about 1 minute
    * **Google Drive** share links (`https://drive.google.com/file/d/…/view?usp=sharing`). The file must be
      shared as *Anyone with the link*.
    * Dropbox share links
+   * **YouTube, SoundCloud, Bandcamp, Vimeo, Internet Archive, Mixcloud** and the
+     [other sites yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md). A single
+     track or video only (no playlists or live streams), and public media only. The import shows real download
+     progress and can be cancelled. Only import content you own or have permission to use, and follow each
+     platform's terms.
 2. **Audio Information:** check the filename, format, size, duration, channels and bitrate, and preview the
    original on its waveform. Click the waveform to seek.
 3. **Processing Settings:**
@@ -173,6 +179,22 @@ source ─► ffmpeg decode ─► rubberband (tempo=2, pitch=1) ─► atrim (e
   Audio below that level passes through unchanged; the tests check this. Volume is never normalised.
 * **Metadata:** title/artist/album tags are copied. Tags that describe the original length are dropped.
 
+### Platform import (yt-dlp)
+
+* Uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) with its default behaviour, and picks the best audio-only
+  format (usually Opus/WebM or AAC/M4A). The original is never re-encoded before the time-stretch.
+* **What it can't import:**
+  * DRM services: Spotify, Apple Music, Deezer, TIDAL, Amazon Music. Their audio is encrypted.
+  * Private, members-only or age-restricted media. SpeedWave never logs in or uses cookies.
+  * Anything else a platform refuses to serve. SpeedWave explains the refusal and does not try to get around it.
+* yt-dlp's "generic" web-page scraper is disabled, so only sites with a dedicated extractor are contacted.
+* **YouTube on cloud servers** (Colab, VPS) is often refused with *"Sign in to confirm you're not a bot"* or
+  HTTP 403. YouTube blocks data-centre IP addresses. It works from a home connection, so run SpeedWave
+  locally for YouTube.
+* Platforms change often. If imports from a site start failing, update yt-dlp:
+  `backend/.venv/bin/pip install -U "yt-dlp[default]"` (`run.sh` and the Colab notebook do this automatically).
+* Disable platform import with `SPEEDWAVE_PLATFORM_IMPORT=0`.
+
 ## 6. Privacy, safety and reliability
 
 * Every browser gets an anonymous session cookie. Sources, jobs and downloads are only visible to that
@@ -196,7 +218,10 @@ source ─► ffmpeg decode ─► rubberband (tempo=2, pitch=1) ─► atrim (e
 | *"Unsupported format"* | Only MP3, WAV, OGG, FLAC, M4A and AAC containers are accepted. Convert other formats first. |
 | *"appears to be corrupted"* / *"No playable audio"* | The file doesn't decode, often because it is truncated or mislabelled. Re-export or re-download it. |
 | *"DRM-protected"* | Protected files (e.g. iTunes FairPlay `.m4p`/`drms`) cannot be processed. |
-| *"This is a YouTube/Spotify… page"* | Only direct file links work. Download the file through the platform's own permitted options and upload it. |
+| *"YouTube is blocking downloads from this server's network"* / *"refused the download (HTTP 403)"* | The platform blocks cloud or data-centre IPs (common on Colab). Run SpeedWave on your own computer, or upload the file. Also update yt-dlp. |
+| *"Spotify/Apple Music… DRM-protected"* | Encrypted services can't be imported. Use a file you own instead. |
+| *"private, members-only… / age-restricted"* | Needs a logged-in account, which SpeedWave doesn't use. |
+| *"Playlists… aren't supported"* | Paste the link of one track or video. |
 | *"This Google Drive file isn't shared publicly"* / Drive 404 | In Drive: right-click the file → Share → General access → **Anyone with the link**, then copy the link again. Folder links don't work; share the file itself. |
 | *"Access denied: requires a login"* | The link needs authentication. Download it in your browser and upload the file. |
 | *"points to a web page"* | You copied a page link, not the file link. Right-click the download button and copy the link address. |
@@ -215,7 +240,9 @@ source ─► ffmpeg decode ─► rubberband (tempo=2, pitch=1) ─► atrim (e
 | GET | `/api/health` | Engine status (FFmpeg, rubberband + engine, encoders) |
 | GET | `/api/config` | Limits and options for the UI |
 | POST | `/api/sources/upload` | multipart `file` → source info |
-| POST | `/api/sources/url` | `{"url": "..."}` → source info |
+| POST | `/api/sources/url` | `{"url": "..."}` → source info (synchronous) |
+| POST | `/api/imports` | `{"url": "..."}` → background import task (202), for direct, Drive and platform links |
+| GET | `/api/imports/{id}` · POST `/api/imports/{id}/cancel` | Import progress (bytes, speed, ETA) and the finished source / cancel |
 | GET | `/api/sources/{id}` · `/audio` · `/waveform` | Info, original audio (supports Range), waveform peaks |
 | DELETE | `/api/sources/{id}` | Delete the source and its outputs |
 | POST | `/api/jobs` | `{source_id, speed, formats, mp3_bitrate, ogg_quality, quality, clip_protection}` → job (202) |

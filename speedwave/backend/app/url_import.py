@@ -9,11 +9,13 @@ from __future__ import annotations
 import ipaddress
 import re
 import socket
+import time
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
 import httpx
 
+from . import media_import
 from .config import settings
 
 
@@ -65,8 +67,15 @@ def validate_url(url: str) -> str:
         raise UrlImportError("That doesn't look like a valid URL.")
     if parts.username or parts.password:
         raise UrlImportError("Links with embedded credentials are not supported. Use a publicly accessible direct link.")
+    drm = media_import.drm_platform(url)
+    if drm:
+        raise UrlImportError(
+            f"{drm} streams are DRM-protected (encrypted), so their audio can't be imported. "
+            f"If you own the track, export or download the file through {drm}'s own options and upload it here.",
+            status=422,
+        )
     platform = _platform_for(parts.hostname)
-    if platform:
+    if platform and not media_import.available():
         raise UrlImportError(
             f"This is a {platform} page, not a direct audio file. SpeedWave only imports direct download links "
             f"(e.g. https://example.com/song.mp3) and does not extract audio from streaming platforms. "
@@ -135,9 +144,33 @@ def resolve_share_link(url: str) -> tuple[str, str | None]:
     return url, None
 
 
-def download(url: str, dest_dir: Path) -> tuple[Path, str, int]:
-    """Fetch the URL into dest_dir. Returns (path, original filename, size in bytes)."""
-    url, provider = resolve_share_link(validate_url(url))
+def source_kind(url: str) -> tuple[str, str | None]:
+    """("platform", name) when the URL is a media page yt-dlp handles, else ("direct", provider)."""
+    url = validate_url(url)
+    _, provider = resolve_share_link(url)
+    if provider is None:
+        name = media_import.platform_name(url)
+        if name:
+            return "platform", name
+    return "direct", {"gdrive": "Google Drive", "dropbox": "Dropbox"}.get(provider or "")
+
+
+def download(url: str, dest_dir: Path, on_progress=None, cancel=None) -> tuple[Path, str, int]:
+    """Fetch the URL into dest_dir. Returns (path, original filename, size in bytes).
+
+    on_progress(downloaded, total, speed, eta) is called while downloading; setting the
+    `cancel` threading.Event aborts the download.
+    """
+    url = validate_url(url)
+    kind, _ = source_kind(url)
+    if kind == "platform":
+        host = urlsplit(url)
+        _check_host_is_public(host.hostname or "", host.port or 443)
+        try:
+            return media_import.download(url, dest_dir, on_progress, cancel)
+        except media_import.MediaImportError as e:
+            raise UrlImportError(str(e), status=e.status) from e
+    url, provider = resolve_share_link(url)
     limit = settings.max_upload_bytes
     timeout = httpx.Timeout(settings.url_timeout_seconds, connect=10.0)
     headers = {"User-Agent": "SpeedWave/1.0 (audio speed converter)", "Accept": "audio/*, application/ogg, */*;q=0.5"}
@@ -155,7 +188,7 @@ def download(url: str, dest_dir: Path) -> tuple[Path, str, int]:
                             raise UrlImportError("The server sent a redirect without a destination.")
                         current = validate_url(urljoin(current, location))
                         continue
-                    return _save(resp, current, dest_dir, limit, provider)
+                    return _save(resp, current, dest_dir, limit, provider, on_progress, cancel)
             except httpx.TimeoutException as e:
                 raise UrlImportError("The server took too long to respond.", status=504) from e
             except httpx.HTTPError as e:
@@ -163,7 +196,8 @@ def download(url: str, dest_dir: Path) -> tuple[Path, str, int]:
         raise UrlImportError("Too many redirects.")
 
 
-def _save(resp: httpx.Response, url: str, dest_dir: Path, limit: int, provider: str | None = None) -> tuple[Path, str, int]:
+def _save(resp: httpx.Response, url: str, dest_dir: Path, limit: int, provider: str | None = None,
+          on_progress=None, cancel=None) -> tuple[Path, str, int]:
     code = resp.status_code
     ctype = resp.headers.get("content-type", "").split(";")[0].strip().lower()
     if provider == "gdrive":
@@ -204,9 +238,19 @@ def _save(resp: httpx.Response, url: str, dest_dir: Path, limit: int, provider: 
         name += ext
     dest = dest_dir / f"source{ext or '.bin'}"
     size = 0
+    total = int(length) if length and length.isdigit() else None
+    started = time.monotonic()
     with open(dest, "wb") as f:
         for chunk in resp.iter_bytes(1024 * 256):
+            if cancel is not None and cancel.is_set():
+                f.close()
+                dest.unlink(missing_ok=True)
+                raise UrlImportError("Import cancelled.", status=499)
             size += len(chunk)
+            if on_progress:
+                elapsed = max(time.monotonic() - started, 1e-3)
+                speed = size / elapsed
+                on_progress(size, total, speed, (total - size) / speed if total else None)
             if size > limit:
                 f.close()
                 dest.unlink(missing_ok=True)

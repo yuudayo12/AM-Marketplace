@@ -350,9 +350,8 @@ def test_url_private_addresses_blocked_by_default(client, http_server, monkeypat
         ("not a url", "http"),
         ("", "enter a url"),
         ("https://user:pw@example.com/a.mp3", "credentials"),
-        ("https://www.youtube.com/watch?v=abc", "youtube"),
-        ("https://open.spotify.com/track/123", "spotify"),
-        ("https://soundcloud.com/artist/track", "soundcloud"),
+        ("https://open.spotify.com/track/123", "drm"),
+        ("https://music.apple.com/us/album/x/1", "drm"),
     ],
 )
 def test_url_validation(client, url, fragment):
@@ -364,7 +363,7 @@ def test_url_validation(client, url, fragment):
 def test_validate_url_unit():
     assert url_import.validate_url("  https://cdn.example.com/a.mp3 ") == "https://cdn.example.com/a.mp3"
     with pytest.raises(url_import.UrlImportError):
-        url_import.validate_url("https://m.youtube.com/watch?v=x")
+        url_import.validate_url("https://open.spotify.com/track/x")
 
 
 # ------------------------------------------------------------------------------ Google Drive / Dropbox

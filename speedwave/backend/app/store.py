@@ -143,10 +143,69 @@ class Job:
         }
 
 
+@dataclass
+class ImportTask:
+    """A URL / platform import running in the background, with real download progress."""
+
+    id: str
+    session_id: str
+    url: str
+    kind: str  # "direct" | "platform"
+    platform: Optional[str]
+    status: str = "downloading"  # downloading | analyzing | completed | failed | cancelled
+    stage: str = "Connecting"
+    downloaded: int = 0
+    total: Optional[int] = None
+    speed: Optional[float] = None
+    eta: Optional[float] = None
+    error: Optional[str] = None
+    source: Optional[Source] = None
+    created_at: float = field(default_factory=time.time)
+    cancel_event: threading.Event = field(default_factory=threading.Event)
+
+    @property
+    def active(self) -> bool:
+        return self.status in {"downloading", "analyzing"}
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "url": self.url,
+            "kind": self.kind,
+            "platform": self.platform,
+            "status": self.status,
+            "stage": self.stage,
+            "downloaded_bytes": self.downloaded,
+            "total_bytes": self.total,
+            "progress": round(min(self.downloaded / self.total, 1.0), 4) if self.total else None,
+            "speed_bps": None if self.speed is None else round(self.speed),
+            "eta_seconds": None if self.eta is None else round(self.eta, 1),
+            "error": self.error,
+            "source": self.source.to_dict() if self.source else None,
+        }
+
+
+def register_source(session_id: str, source_id: str, d: Path, path: Path, name: str, size: int, origin: str) -> Source:
+    """Probe a stored file and register it. Raises audio.AudioError (and removes the folder) if unusable."""
+    try:
+        info = audio.probe(path)
+        if info.duration > settings.max_duration_minutes * 60:
+            raise audio.AudioError(f"The audio is longer than the {settings.max_duration_minutes}-minute limit.")
+    except audio.AudioError:
+        shutil.rmtree(d, ignore_errors=True)
+        raise
+    src = Source(id=source_id, session_id=session_id, dir=d, path=path, original_name=name, size=size, info=info, origin=origin)
+    store.add_source(src)
+    log.info("Source %s: %s (%s, %.1fs, %d ch)", source_id, name, info.format_label, info.duration, info.channels)
+    return src
+
+
 class Store:
     def __init__(self) -> None:
         self.sources: dict[str, Source] = {}
         self.jobs: dict[str, Job] = {}
+        self.imports: dict[str, ImportTask] = {}
+        self._import_sem: Optional[asyncio.Semaphore] = None
         self._lock = asyncio.Lock()
         self._sem: Optional[asyncio.Semaphore] = None
 
@@ -186,6 +245,54 @@ class Store:
         except OSError:
             pass
         shutil.rmtree(src.dir, ignore_errors=True)
+
+    # ---------------------------------------------------------------- imports
+
+    def get_import(self, import_id: str, session_id: str) -> Optional[ImportTask]:
+        task = self.imports.get(import_id)
+        return task if task is not None and task.session_id == session_id else None
+
+    def start_import(self, session_id: str, url: str, kind: str, platform: Optional[str]) -> ImportTask:
+        task = ImportTask(id=new_id(), session_id=session_id, url=url, kind=kind, platform=platform)
+        self.imports[task.id] = task
+        asyncio.create_task(self._run_import(task))
+        return task
+
+    async def _run_import(self, task: ImportTask) -> None:
+        from . import url_import  # local import: url_import -> media_import -> config only
+
+        if self._import_sem is None:
+            self._import_sem = asyncio.Semaphore(3)
+        source_id, d = self.new_source_dir(task.session_id)
+
+        def on_progress(done: int, total: Optional[int], speed: Optional[float], eta: Optional[float]) -> None:
+            task.stage = f"Downloading from {task.platform}" if task.platform else "Downloading"
+            task.downloaded, task.total, task.speed, task.eta = done, total, speed, eta
+
+        try:
+            async with self._import_sem:
+                task.stage = f"Fetching from {task.platform}" if task.platform else "Connecting"
+                path, name, size = await asyncio.to_thread(url_import.download, task.url, d, on_progress, task.cancel_event)
+                task.status, task.stage, task.eta = "analyzing", "Analyzing audio", None
+                task.downloaded = size
+                task.source = await asyncio.to_thread(
+                    register_source, task.session_id, source_id, d, path, name, size, "platform" if task.kind == "platform" else "url"
+                )
+            task.status, task.stage = "completed", "Done"
+        except url_import.UrlImportError as e:
+            shutil.rmtree(d, ignore_errors=True)
+            cancelled = task.cancel_event.is_set() or e.status == 499
+            task.status = "cancelled" if cancelled else "failed"
+            task.stage, task.error = ("Cancelled", None) if cancelled else ("Failed", str(e))
+        except audio.AudioError as e:
+            task.status, task.stage, task.error = "failed", "Failed", str(e)
+        except Exception as e:  # pragma: no cover
+            log.exception("Import %s crashed", task.id)
+            shutil.rmtree(d, ignore_errors=True)
+            task.status, task.stage = "failed", "Failed"
+            task.error = f"Unexpected import error ({type(e).__name__}). Check the server log."
+        finally:
+            task.speed = task.eta = None
 
     # ---------------------------------------------------------------- jobs
 
@@ -290,6 +397,9 @@ class Store:
             if src.last_access < cutoff and not busy:
                 self.remove_source(src)
                 removed += 1
+        for t in list(self.imports.values()):
+            if not t.active and t.created_at < cutoff:
+                self.imports.pop(t.id, None)
         # Orphaned directories (e.g. left over from a previous server run).
         root = settings.data_dir
         if root.exists():

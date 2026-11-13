@@ -5,6 +5,8 @@ cd "$(dirname "$0")"
 command -v ffmpeg >/dev/null || { echo "ffmpeg not found. Install FFmpeg built with librubberband (see README)."; exit 1; }
 if [ ! -d backend/.venv ]; then python3 -m venv backend/.venv; fi
 backend/.venv/bin/pip install -q -r backend/requirements.txt
+backend/.venv/bin/pip install -q -U "yt-dlp[default]"   # platforms change often; stay current
+export PATH="$PWD/backend/.venv/bin:$PATH"            # so yt-dlp finds deno
 if [ ! -d frontend/dist ] || [ "${REBUILD:-0}" = "1" ]; then
   (cd frontend && npm install --no-audit --no-fund && npm run build)
 fi

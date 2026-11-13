@@ -10,6 +10,23 @@ export interface AppConfig {
   quality_modes: { id: QualityMode; label: string; description: string }[];
   default_quality: QualityMode;
   r3_available: boolean;
+  platform_import: { enabled: boolean; yt_dlp: string | null; js_runtime: boolean };
+}
+
+export interface ImportTask {
+  id: string;
+  url: string;
+  kind: "direct" | "platform";
+  platform: string | null;
+  status: "downloading" | "analyzing" | "completed" | "failed" | "cancelled";
+  stage: string;
+  downloaded_bytes: number;
+  total_bytes: number | null;
+  progress: number | null;
+  speed_bps: number | null;
+  eta_seconds: number | null;
+  error: string | null;
+  source: Source | null;
 }
 
 export type OutputFormat = "mp3" | "ogg";
@@ -19,7 +36,7 @@ export interface Source {
   id: string;
   filename: string;
   size: number;
-  origin: "upload" | "url";
+  origin: "upload" | "url" | "platform";
   format: string;
   codec: string;
   duration: number;
@@ -114,6 +131,9 @@ export const api = {
   config: () => request<AppConfig>("/api/config"),
   health: () => request<{ ok: boolean; ffmpeg: string | null; rubberband_engine: string | null }>("/api/health"),
   importUrl: (url: string, signal?: AbortSignal) => request<Source>("/api/sources/url", { ...json({ url }), signal }),
+  startImport: (url: string) => request<ImportTask>("/api/imports", json({ url })),
+  getImport: (id: string) => request<ImportTask>(`/api/imports/${id}`),
+  cancelImport: (id: string) => request<ImportTask>(`/api/imports/${id}/cancel`, { method: "POST" }),
   deleteSource: (id: string) => request<void>(`/api/sources/${id}`, { method: "DELETE" }),
   waveform: (url: string) => request<{ peaks: number[] }>(url).then((r) => r.peaks),
   createJob: (source_id: string, s: JobSettings) => request<Job>("/api/jobs", json({ source_id, ...s })),

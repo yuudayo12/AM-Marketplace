@@ -42,8 +42,12 @@ INPUT_FORMATS: dict[str, set[str]] = {
     "FLAC": {"flac"},
     "M4A": {"mov", "mp4", "m4a", "3gp", "3g2", "mj2", "ipod"},
     "AAC": {"aac"},
+    # WebM/Opus is what YouTube and many platforms deliver as their best audio.
+    "WEBM": {"matroska", "webm"},
 }
-INPUT_EXTENSIONS = {".mp3", ".wav", ".ogg", ".oga", ".flac", ".m4a", ".mp4", ".aac"}
+INPUT_EXTENSIONS = {".mp3", ".wav", ".ogg", ".oga", ".opus", ".flac", ".m4a", ".mp4", ".aac", ".webm"}
+INPUT_MIME = {"MP3": "audio/mpeg", "WAV": "audio/wav", "OGG": "audio/ogg", "FLAC": "audio/flac",
+              "M4A": "audio/mp4", "AAC": "audio/aac", "WEBM": "audio/webm"}
 
 OUTPUT_FORMATS = {
     "mp3": {"ext": "mp3", "mime": "audio/mpeg", "codec": "mp3"},
@@ -142,7 +146,7 @@ def probe(path: Path) -> AudioInfo:
     label = format_label_for(format_name)
     if label is None:
         raise AudioError(
-            f"Unsupported format ({format_name or 'unknown'}). Supported formats: MP3, WAV, OGG, FLAC, M4A, AAC."
+            f"Unsupported format ({format_name or 'unknown'}). Supported formats: MP3, WAV, OGG, FLAC, M4A, AAC, WEBM."
         )
 
     streams = [s for s in data.get("streams", []) if s.get("codec_type") == "audio"]

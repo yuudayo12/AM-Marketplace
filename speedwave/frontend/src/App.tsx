@@ -6,7 +6,7 @@ import { InputSection, type Intake } from "./components/InputSection";
 import { ProcessingStatus } from "./components/ProcessingStatus";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { Alert, IconBolt, Spinner } from "./components/ui";
-import { api, ApiError, isActive, type AppConfig, type Job, type JobSettings, type Source } from "./lib/api";
+import { api, ApiError, isActive, type AppConfig, type ImportTask, type Job, type JobSettings, type Source } from "./lib/api";
 import { speedLabel } from "./lib/format";
 
 const DEFAULT_SETTINGS: JobSettings = {
@@ -109,14 +109,38 @@ export default function App() {
   const onUrl = async (url: string) => {
     setError(null);
     replaceSource();
-    setIntake({ kind: "importing", url });
-    const ctrl = new AbortController();
-    abortRef.current = () => ctrl.abort();
+    setIntake({ kind: "importing", url, task: null });
+    let task: ImportTask;
     try {
-      accept(await api.importUrl(url, ctrl.signal));
+      task = await api.startImport(url);
     } catch (e) {
       setIntake({ kind: "idle" });
-      if ((e as Error).name !== "AbortError") setError((e as Error).message);
+      setError((e as Error).message);
+      return;
+    }
+    let cancelled = false;
+    abortRef.current = () => {
+      cancelled = true;
+      api.cancelImport(task.id).catch(() => {});
+      setIntake({ kind: "idle" });
+    };
+    // Poll real download progress until the import finishes.
+    while (!cancelled) {
+      setIntake({ kind: "importing", url, task });
+      if (task.status === "completed" && task.source) return accept(task.source);
+      if (task.status === "failed" || task.status === "cancelled") {
+        setIntake({ kind: "idle" });
+        if (task.status === "failed") setError(task.error ?? "Import failed.");
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        task = await api.getImport(task.id);
+      } catch (e) {
+        setIntake({ kind: "idle" });
+        setError((e as Error).message);
+        return;
+      }
     }
   };
 
