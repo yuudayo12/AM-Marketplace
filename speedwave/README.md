@@ -23,6 +23,20 @@ speedwave/
 
 ---
 
+## 0. Quickest start: run in Google Colab (nothing to install)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yuudayo12/AM-Marketplace/blob/main/speedwave/SpeedWave_Colab.ipynb)
+
+1. Open [`SpeedWave_Colab.ipynb`](SpeedWave_Colab.ipynb) in Google Colab (badge above, after this branch is
+   merged into `main`; before that, use the commit link from the pull request / chat).
+2. **Runtime → Run all**, then wait 2–4 minutes.
+3. Click **🚀 Open SpeedWave**. The app opens at a Google link (`…colab.googleusercontent.com`). It works
+   only in that browser, signed in to the same Google account.
+4. Optional: step 4 creates a public `trycloudflare.com` link for your phone or another browser.
+
+Colab installs a static FFmpeg build with Rubber Band 3 (R3 engine). If that download fails, it falls back
+to Ubuntu's FFmpeg (R2). The notebook prints which engine is active.
+
 ## 1. Requirements
 
 | Dependency | Version | Notes |
@@ -108,7 +122,11 @@ cd backend && .venv/bin/pytest          # 64 tests, about 1 minute
 ## 4. How to use
 
 1. **Input:** drag an MP3/WAV/OGG/FLAC/M4A/AAC file onto the drop zone, click **Browse Files**, or paste a
-   direct link (e.g. `https://example.com/track.mp3`) and click **Import URL**.
+   link and click **Import URL**. Supported links:
+   * direct file links (e.g. `https://example.com/track.mp3`)
+   * **Google Drive** share links (`https://drive.google.com/file/d/…/view?usp=sharing`). The file must be
+     shared as *Anyone with the link*.
+   * Dropbox share links
 2. **Audio Information:** check the filename, format, size, duration, channels and bitrate, and preview the
    original on its waveform. Click the waveform to seek.
 3. **Processing Settings:**
@@ -175,6 +193,7 @@ source ─► ffmpeg decode ─► rubberband (tempo=2, pitch=1) ─► atrim (e
 | *"appears to be corrupted"* / *"No playable audio"* | The file doesn't decode, often because it is truncated or mislabelled. Re-export or re-download it. |
 | *"DRM-protected"* | Protected files (e.g. iTunes FairPlay `.m4p`/`drms`) cannot be processed. |
 | *"This is a YouTube/Spotify… page"* | Only direct file links work. Download the file through the platform's own permitted options and upload it. |
+| *"This Google Drive file isn't shared publicly"* / Drive 404 | In Drive: right-click the file → Share → General access → **Anyone with the link**, then copy the link again. Folder links don't work; share the file itself. |
 | *"Access denied: requires a login"* | The link needs authentication. Download it in your browser and upload the file. |
 | *"points to a web page"* | You copied a page link, not the file link. Right-click the download button and copy the link address. |
 | *"private, local or internal network addresses"* | Blocked by SSRF protection. For local use only, set `SPEEDWAVE_ALLOW_PRIVATE_URLS=1`. |

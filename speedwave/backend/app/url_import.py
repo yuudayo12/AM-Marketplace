@@ -99,9 +99,45 @@ def _filename_from(response: httpx.Response, url: str) -> str:
     return name or "audio"
 
 
+GDRIVE_HOSTS = {"drive.google.com", "docs.google.com", "drive.usercontent.google.com"}
+GDRIVE_ID = r"[A-Za-z0-9_-]{10,}"
+GDRIVE_NOT_PUBLIC = (
+    "This Google Drive file isn't shared publicly. In Google Drive, choose Share > General access > "
+    "'Anyone with the link', then paste the link again."
+)
+
+
+def resolve_share_link(url: str) -> tuple[str, str | None]:
+    """Turn a cloud-storage *share* link into its public direct-download URL.
+
+    Returns (url, provider). Only the provider's normal public download endpoint is used:
+    files must already be shared publicly, and nothing private is accessed.
+    """
+    parts = urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if host in GDRIVE_HOSTS:
+        if "/folders/" in parts.path or ("/drive/" in parts.path and "/file/" not in parts.path):
+            raise UrlImportError(
+                "That's a Google Drive folder link. Open the audio file itself, choose Share > Copy link, and paste that link.",
+                status=422,
+            )
+        if re.match(r"^/(document|spreadsheets|presentation|forms)/", parts.path):
+            raise UrlImportError("That's a Google Docs/Sheets/Slides link, not an audio file.", status=422)
+        m = re.search(rf"/file/d/({GDRIVE_ID})", parts.path) or re.search(rf"(?:^|&)id=({GDRIVE_ID})", parts.query)
+        if not m:
+            raise UrlImportError("Could not find the file ID in that Google Drive link. Use Share > Copy link on the file.", status=422)
+        # confirm=t is what Drive's own "Download anyway" button sends for files too large
+        # for its virus scan. It works only for files that are already public.
+        return f"https://drive.usercontent.google.com/download?id={m.group(1)}&export=download&confirm=t", "gdrive"
+    if host in {"www.dropbox.com", "dropbox.com"} and "/s" in parts.path:
+        query = re.sub(r"(?:^|&)dl=0", "", parts.query).strip("&")
+        return parts._replace(query=(query + "&" if query else "") + "dl=1").geturl(), "dropbox"
+    return url, None
+
+
 def download(url: str, dest_dir: Path) -> tuple[Path, str, int]:
     """Fetch the URL into dest_dir. Returns (path, original filename, size in bytes)."""
-    url = validate_url(url)
+    url, provider = resolve_share_link(validate_url(url))
     limit = settings.max_upload_bytes
     timeout = httpx.Timeout(settings.url_timeout_seconds, connect=10.0)
     headers = {"User-Agent": "SpeedWave/1.0 (audio speed converter)", "Accept": "audio/*, application/ogg, */*;q=0.5"}
@@ -119,7 +155,7 @@ def download(url: str, dest_dir: Path) -> tuple[Path, str, int]:
                             raise UrlImportError("The server sent a redirect without a destination.")
                         current = validate_url(urljoin(current, location))
                         continue
-                    return _save(resp, current, dest_dir, limit)
+                    return _save(resp, current, dest_dir, limit, provider)
             except httpx.TimeoutException as e:
                 raise UrlImportError("The server took too long to respond.", status=504) from e
             except httpx.HTTPError as e:
@@ -127,8 +163,15 @@ def download(url: str, dest_dir: Path) -> tuple[Path, str, int]:
         raise UrlImportError("Too many redirects.")
 
 
-def _save(resp: httpx.Response, url: str, dest_dir: Path, limit: int) -> tuple[Path, str, int]:
+def _save(resp: httpx.Response, url: str, dest_dir: Path, limit: int, provider: str | None = None) -> tuple[Path, str, int]:
     code = resp.status_code
+    ctype = resp.headers.get("content-type", "").split(";")[0].strip().lower()
+    if provider == "gdrive":
+        # Drive answers private or missing files with a sign-in page or an HTML error.
+        if code in (401, 403) or (code < 400 and ctype.startswith("text/html")):
+            raise UrlImportError(GDRIVE_NOT_PUBLIC, status=422)
+        if code == 404:
+            raise UrlImportError("Google Drive can't find this file (404). Check that the link is complete and that the file is shared as 'Anyone with the link'.", status=422)
     if code in (401, 403):
         raise UrlImportError(
             "Access denied: this link requires a login or permission. Only publicly accessible direct links are supported.",
@@ -141,7 +184,6 @@ def _save(resp: httpx.Response, url: str, dest_dir: Path, limit: int) -> tuple[P
     if code >= 400:
         raise UrlImportError(f"The server returned an error ({code}).", status=502)
 
-    ctype = resp.headers.get("content-type", "").split(";")[0].strip().lower()
     if ctype.startswith("text/") or ctype in {"application/json", "application/xml", "application/xhtml+xml"}:
         raise UrlImportError(
             "That URL points to a web page, not an audio file. Use a direct link to the file itself "

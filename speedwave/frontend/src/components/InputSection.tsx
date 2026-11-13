@@ -114,7 +114,7 @@ export function InputSection({ config, intake, disabled, onFile, onUrl, onCancel
             inputMode="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com/audio/track.mp3"
+            placeholder="https://drive.google.com/file/d/… or https://…/track.mp3"
             disabled={busy || disabled}
             className="w-full rounded-xl border border-ink-600 bg-ink-850 py-3 pl-11 pr-4 font-mono text-sm text-slate-100 placeholder:text-slate-600 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 disabled:opacity-50"
           />
@@ -128,8 +128,8 @@ export function InputSection({ config, intake, disabled, onFile, onUrl, onCancel
         </button>
       </form>
       <p className="mt-2 text-xs text-slate-500">
-        Direct, publicly accessible file links only. Streaming platform pages (YouTube, Spotify, SoundCloud…) and
-        login-protected or DRM content are not supported.
+        Direct file links and public Google Drive / Dropbox share links (set to “Anyone with the link”). Streaming
+        platform pages (YouTube, Spotify, SoundCloud…) and login-protected or DRM content are not supported.
       </p>
     </Panel>
   );

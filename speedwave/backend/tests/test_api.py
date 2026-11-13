@@ -365,3 +365,69 @@ def test_validate_url_unit():
     assert url_import.validate_url("  https://cdn.example.com/a.mp3 ") == "https://cdn.example.com/a.mp3"
     with pytest.raises(url_import.UrlImportError):
         url_import.validate_url("https://m.youtube.com/watch?v=x")
+
+
+# ------------------------------------------------------------------------------ Google Drive / Dropbox
+
+DRIVE_ID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+DIRECT = f"https://drive.usercontent.google.com/download?id={DRIVE_ID}&export=download&confirm=t"
+
+
+@pytest.mark.parametrize(
+    "link",
+    [
+        f"https://drive.google.com/file/d/{DRIVE_ID}/view?usp=sharing",
+        f"https://drive.google.com/file/d/{DRIVE_ID}/view?usp=drive_link",
+        f"https://drive.google.com/open?id={DRIVE_ID}",
+        f"https://drive.google.com/uc?export=download&id={DRIVE_ID}",
+        f"https://docs.google.com/uc?id={DRIVE_ID}",
+        f"https://drive.google.com/file/u/0/d/{DRIVE_ID}/view".replace("/u/0/d/", "/d/"),
+    ],
+)
+def test_google_drive_share_links_resolve_to_direct_download(link):
+    assert url_import.resolve_share_link(link) == (DIRECT, "gdrive")
+
+
+@pytest.mark.parametrize(
+    "link,fragment",
+    [
+        ("https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp", "folder"),
+        ("https://docs.google.com/document/d/1AbCdEfGhIjKlMnOp/edit", "docs"),
+        ("https://drive.google.com/file/view", "file id"),
+    ],
+)
+def test_google_drive_unsupported_links(link, fragment):
+    with pytest.raises(url_import.UrlImportError) as e:
+        url_import.resolve_share_link(link)
+    assert fragment in str(e.value).lower()
+
+
+def test_dropbox_share_link_forces_download():
+    url, provider = url_import.resolve_share_link("https://www.dropbox.com/scl/fi/abc/song.mp3?rlkey=xyz&dl=0")
+    assert provider == "dropbox" and url == "https://www.dropbox.com/scl/fi/abc/song.mp3?rlkey=xyz&dl=1"
+
+
+def test_other_links_unchanged():
+    assert url_import.resolve_share_link("https://cdn.example.com/a.mp3") == ("https://cdn.example.com/a.mp3", None)
+
+
+def _fake(status: int, ctype: str, body: bytes = b"", cd: str | None = None):
+    import httpx
+
+    headers = {"content-type": ctype}
+    if cd:
+        headers["content-disposition"] = cd
+    return httpx.Response(status, headers=headers, content=body)
+
+
+def test_private_drive_file_gives_sharing_instructions(tmp_path):
+    for resp in (_fake(200, "text/html; charset=utf-8", b"<html>Sign in</html>"), _fake(403, "text/html")):
+        with pytest.raises(url_import.UrlImportError) as e:
+            url_import._save(resp, DIRECT, tmp_path, 10**8, "gdrive")
+        assert "anyone with the link" in str(e.value).lower()
+
+
+def test_public_drive_file_saved_with_its_name(tmp_path, signals):
+    resp = _fake(200, "audio/mpeg", signals["mp3"].read_bytes(), "attachment; filename=\"Lagu Saya.mp3\"")
+    path, name, size = url_import._save(resp, DIRECT, tmp_path, 10**8, "gdrive")
+    assert name == "Lagu Saya.mp3" and path.suffix == ".mp3" and size == signals["mp3"].stat().st_size
