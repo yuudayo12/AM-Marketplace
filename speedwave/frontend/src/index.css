@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { color-scheme: dark; background: #0d0e12; }
+  body { min-height: 100vh; }
+  ::selection { background: rgba(139, 92, 246, 0.4); }
+  :focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
+  select option { background: #15171d; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

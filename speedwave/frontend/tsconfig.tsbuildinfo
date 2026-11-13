@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/AudioInfo.tsx","./src/components/DownloadSection.tsx","./src/components/Header.tsx","./src/components/InputSection.tsx","./src/components/ProcessingStatus.tsx","./src/components/SettingsPanel.tsx","./src/components/WaveformPlayer.tsx","./src/components/ui.tsx","./src/lib/api.ts","./src/lib/format.ts"],"version":"5.9.3"}
